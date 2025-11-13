@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "722802110473",
+    "project_id": "try-space-b395f",
+    "storage_bucket": "try-space-b395f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:722802110473:android:dd86c35d5f1573664288d8",
+        "android_client_info": {
+          "package_name": "com.example.try_space"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "722802110473-27qsm5lp47keo3vruooi46p5u4q8voqf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAgTp4oxS1SLU4AbpIZaCFQLShTMl3Yaao"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "722802110473-27qsm5lp47keo3vruooi46p5u4q8voqf.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
