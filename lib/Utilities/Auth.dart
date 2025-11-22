@@ -116,4 +116,67 @@ class Auth {
 String? getCurrentUserId() {
     return _auth.currentUser?.uid;
   }
+
+  // Send password reset email
+  Future<String?> sendPasswordResetEmail(String email) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+      return null; // Success
+    } on FirebaseAuthException catch (e) {
+      // Return error message
+      switch (e.code) {
+        case 'user-not-found':
+          return 'No account found with this email address.';
+        case 'invalid-email':
+          return 'Invalid email address.';
+        case 'too-many-requests':
+          return 'Too many requests. Please try again later.';
+        default:
+          return e.message ?? 'An error occurred. Please try again.';
+      }
+    } catch (e) {
+      return 'An unexpected error occurred. Please try again.';
+    }
+  }
+
+  // Change password (requires reauthentication)
+  Future<String?> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        return 'No user is currently signed in.';
+      }
+
+      // Reauthenticate user with current password
+      final credential = EmailAuthProvider.credential(
+        email: user.email!,
+        password: currentPassword,
+      );
+
+      await user.reauthenticateWithCredential(credential);
+
+      // Update password
+      await user.updatePassword(newPassword);
+      return null; // Success
+    } on FirebaseAuthException catch (e) {
+      // Return error message
+      switch (e.code) {
+        case 'wrong-password':
+          return 'Current password is incorrect.';
+        case 'weak-password':
+          return 'New password is too weak. Please choose a stronger password.';
+        case 'requires-recent-login':
+          return 'Please sign out and sign in again before changing your password.';
+        case 'too-many-requests':
+          return 'Too many requests. Please try again later.';
+        default:
+          return e.message ?? 'An error occurred. Please try again.';
+      }
+    } catch (e) {
+      return 'An unexpected error occurred. Please try again.';
+    }
+  }
 }

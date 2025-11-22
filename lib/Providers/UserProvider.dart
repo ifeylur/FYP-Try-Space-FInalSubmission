@@ -36,6 +36,7 @@ class UserProvider with ChangeNotifier {
   Future<void> updateUserProfile({
     required String name,
     required String profileImageUrl,
+    String bio = '',
   }) async {
     if (_user == null) return;
 
@@ -45,6 +46,7 @@ class UserProvider with ChangeNotifier {
       await docRef.update({
         'name': name,
         'profileImageUrl': profileImageUrl,
+        'bio': bio,
       });
 
       _user = UserModel(
@@ -52,6 +54,7 @@ class UserProvider with ChangeNotifier {
         name: name,
         email: _user!.email,
         profileImageUrl: profileImageUrl,
+        bio: bio,
       );
 
       notifyListeners();

@@ -7,6 +7,7 @@ import 'package:try_space/Providers/UserProvider.dart';
 import 'package:try_space/Providers/GarmentProvider.dart';
 import 'package:try_space/Providers/TryOnResultProvider.dart';
 import 'package:try_space/Providers/VirtualTryOnProvider.dart';
+import 'package:try_space/Providers/SettingsProvider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -29,19 +30,33 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => SettingsProvider()),
         ChangeNotifierProvider(create: (_) => UserProvider()),
         ChangeNotifierProvider(create: (_) => GarmentProvider()),
         ChangeNotifierProvider(create: (_) => TryOnResultProvider()),
         ChangeNotifierProvider(create: (_) => VirtualTryOnProvider()),
       ],
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          primarySwatch: Colors.blue,
-          visualDensity: VisualDensity.adaptivePlatformDensity,
-        ),
-        home: SplashScreen(),
-        routes: AppRoutes.routes,
+      child: Consumer<SettingsProvider>(
+        builder: (context, settingsProvider, _) {
+          return MaterialApp(
+            debugShowCheckedModeBanner: false,
+            theme: ThemeData(
+              primarySwatch: Colors.blue,
+              visualDensity: VisualDensity.adaptivePlatformDensity,
+              brightness: Brightness.light,
+              useMaterial3: true,
+            ),
+            darkTheme: ThemeData(
+              primarySwatch: Colors.blue,
+              visualDensity: VisualDensity.adaptivePlatformDensity,
+              brightness: Brightness.dark,
+              useMaterial3: true,
+            ),
+            themeMode: settingsProvider.darkMode ? ThemeMode.dark : ThemeMode.light,
+            home: SplashScreen(),
+            routes: AppRoutes.routes,
+          );
+        },
       ),
     );
   }

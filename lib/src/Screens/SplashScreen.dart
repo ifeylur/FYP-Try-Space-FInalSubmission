@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
+import 'package:try_space/Providers/SettingsProvider.dart';
+import 'package:try_space/src/Widgets/PrivacyPolicyDialog.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -65,11 +68,36 @@ class _SplashScreenState extends State<SplashScreen>
   Future<void> _navigateAfterSplash() async {
     await Future.delayed(const Duration(seconds: 2));
 
+    if (!mounted) return;
+
     final prefs = await SharedPreferences.getInstance();
+    final settingsProvider = Provider.of<SettingsProvider>(context, listen: false);
+    
+    // Check if privacy policy has been accepted
+    final privacyAccepted = prefs.getBool('privacy_policy_accepted') ?? false;
+    
+    if (!privacyAccepted) {
+      // Show privacy policy dialog - wait for user to accept
+      await showDialog(
+        context: context,
+        barrierDismissible: false, // Non-dismissible
+        builder: (context) => const PrivacyPolicyDialog(),
+      );
+      
+      // After dialog is closed, check again
+      final accepted = prefs.getBool('privacy_policy_accepted') ?? false;
+      if (!accepted) {
+        // User declined, exit or show error
+        return;
+      }
+    }
+
     final isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
 
     // Wait for Firebase Auth to finish loading the current user
     final user = await FirebaseAuth.instance.authStateChanges().first;
+
+    if (!mounted) return;
 
     if (isLoggedIn && user != null) {
       Navigator.pushReplacementNamed(

@@ -9,6 +9,10 @@ import 'package:try_space/src/Screens/SignUpPage.dart';
 import 'package:try_space/src/Screens/HomePage.dart';
 import 'package:try_space/src/Screens/LoginPage.dart';
 import 'package:try_space/src/Screens/NavBar.dart';
+import 'package:try_space/src/Screens/SettingsPage.dart';
+import 'package:try_space/src/Screens/AboutUsPage.dart';
+import 'package:try_space/src/Screens/ForgotPasswordPage.dart';
+import 'package:try_space/src/Screens/ChangePasswordPage.dart';
 
 
 class AppRoutes {
@@ -22,6 +26,10 @@ class AppRoutes {
   static const String profile = '/profile';
   static const String editprofile = '/editprofile';
   static const String navbar = '/navbar';
+  static const String settings = '/settings';
+  static const String about = '/about';
+  static const String forgotpassword = '/forgotpassword';
+  static const String changepassword = '/changepassword';
 
 
   static Map<String, WidgetBuilder> routes = {
@@ -33,5 +41,9 @@ class AppRoutes {
     profile: (context) => Profile(),
     editprofile: (context) => EditProfile(),
     navbar: (context) => NavBar(),
+    settings: (context) => SettingsPage(),
+    about: (context) => AboutUsPage(),
+    forgotpassword: (context) => ForgotPasswordPage(),
+    changepassword: (context) => ChangePasswordPage(),
   };
 }

@@ -16,21 +16,68 @@ class StorageHelper {
         debugPrint('No user logged in');
         return null;
       }
-      
+
+      // Check if file exists
+      if (!await file.exists()) {
+        debugPrint('File does not exist: ${file.path}');
+        return null;
+      }
+
       // Create a unique filename with timestamp
       final fileName = '${DateTime.now().millisecondsSinceEpoch}_${path.basename(file.path)}';
       final destination = '$folder/$userId/$fileName';
       
-      // Upload the file
+      debugPrint('Uploading file to: $destination');
+      
+      // Upload the file with metadata
       final ref = _storage.ref().child(destination);
-      final uploadTask = ref.putFile(file);
       
-      // Wait for upload to complete
-      final snapshot = await uploadTask.whenComplete(() {});
+      // Determine content type based on file extension
+      final fileExtension = path.extension(file.path).toLowerCase();
+      String? contentType;
+      if (fileExtension == '.jpg' || fileExtension == '.jpeg') {
+        contentType = 'image/jpeg';
+      } else if (fileExtension == '.png') {
+        contentType = 'image/png';
+      } else if (fileExtension == '.gif') {
+        contentType = 'image/gif';
+      }
       
-      // Get download URL
-      final downloadUrl = await snapshot.ref.getDownloadURL();
-      return downloadUrl;
+      final metadata = SettableMetadata(
+        contentType: contentType,
+        cacheControl: 'public, max-age=31536000',
+      );
+      
+      final uploadTask = ref.putFile(file, metadata);
+      
+      // Monitor upload progress
+      uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
+        final progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        debugPrint('Upload progress: ${progress.toStringAsFixed(1)}%');
+      });
+      
+      // Wait for upload to complete and check for errors
+      final snapshot = await uploadTask;
+      
+      if (snapshot.state == TaskState.success) {
+        // Get download URL
+        final downloadUrl = await snapshot.ref.getDownloadURL();
+        debugPrint('File uploaded successfully: $downloadUrl');
+        return downloadUrl;
+      } else {
+        debugPrint('Upload failed with state: ${snapshot.state}');
+        return null;
+      }
+    } on FirebaseException catch (e) {
+      debugPrint('Firebase Storage error: ${e.code} - ${e.message}');
+      if (e.code == 'object-not-found') {
+        debugPrint('Storage bucket or path does not exist. Check Firebase Storage configuration.');
+      } else if (e.code == 'unauthorized') {
+        debugPrint('Unauthorized: Check Firebase Storage security rules.');
+      } else if (e.code == 'canceled') {
+        debugPrint('Upload was canceled.');
+      }
+      return null;
     } catch (e) {
       debugPrint('Error uploading file: $e');
       return null;

@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:try_space/Models/UserModel.dart';
 import 'package:try_space/Providers/UserProvider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class Profile extends StatefulWidget {
   const Profile({super.key});
@@ -133,28 +134,29 @@ class _ProfileState extends State<Profile> {
       ),
       child: Column(
         children: [
-          // Avatar
+          // Avatar with initials fallback
           Container(
-            width: 100,
-            height: 100,
+            width: 150,
+            height: 150,
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.3),
               shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 2),
+              border: Border.all(color: Colors.white, width: 3),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 10,
+                  offset: const Offset(0, 5),
+                ),
+              ],
             ),
             child: user?.profileImageUrl != null && user!.profileImageUrl.isNotEmpty
               ? ClipOval(
                   child: _buildProfileImage(user.profileImageUrl),
                 )
-              : const Center(
-                  child: Icon(
-                    Icons.person,
-                    size: 60,
-                    color: Colors.white,
-                  ),
-                ),
+              : _buildInitialsAvatar(user?.name ?? 'User'),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           
           // User Name
           Text(
@@ -175,37 +177,91 @@ class _ProfileState extends State<Profile> {
               fontSize: 16,
             ),
           ),
+          if (user?.bio != null && user!.bio.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(
+              user.bio,
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.9),
+                fontSize: 14,
+                fontStyle: FontStyle.italic,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildProfileImage(String imageData) {
-    // Check if the image is a base64 string
-    if (imageData.startsWith('http')) {
-      // It's a URL
-      return Image.network(
-        imageData,
+  Widget _buildInitialsAvatar(String name) {
+    // Get initials from name
+    final initials = _getInitials(name);
+    
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Colors.white.withOpacity(0.4),
+            Colors.white.withOpacity(0.2),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: Text(
+          initials,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 48,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _getInitials(String name) {
+    if (name.isEmpty) return 'U';
+    
+    final parts = name.trim().split(' ');
+    if (parts.length == 1) {
+      return parts[0][0].toUpperCase();
+    } else {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+  }
+
+  Widget _buildProfileImage(String imageUrl) {
+    // Check if the image is a URL or base64
+    if (imageUrl.startsWith('http')) {
+      // It's a URL (Firebase Storage)
+      return CachedNetworkImage(
+        imageUrl: imageUrl,
         fit: BoxFit.cover,
-        width: 100,
-        height: 100,
-        errorBuilder: (context, error, stackTrace) => 
-          const Icon(Icons.person, size: 60, color: Colors.white),
+        width: 150,
+        height: 150,
+        placeholder: (context, url) => const Center(
+          child: CircularProgressIndicator(color: Colors.white),
+        ),
+        errorWidget: (context, url, error) => _buildInitialsAvatar('User'),
       );
     } else {
-      // It's a base64 string
+      // It's a base64 string (legacy support)
       try {
         return Image.memory(
-          base64Decode(imageData),
+          base64Decode(imageUrl),
           fit: BoxFit.cover,
-          width: 100,
-          height: 100,
+          width: 150,
+          height: 150,
           errorBuilder: (context, error, stackTrace) => 
-            const Icon(Icons.person, size: 60, color: Colors.white),
+            _buildInitialsAvatar('User'),
         );
       } catch (e) {
         debugPrint('Error decoding base64 image: $e');
-        return const Icon(Icons.person, size: 60, color: Colors.white);
+        return _buildInitialsAvatar('User');
       }
     }
   }

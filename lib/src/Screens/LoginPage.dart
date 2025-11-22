@@ -42,9 +42,7 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _forgotPassword() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Password reset functionality goes here')),
-    );
+    Navigator.pushNamed(context, '/forgotpassword');
   }
   Future<void> handleGoogleSignIn(BuildContext context) async {
   _showLoadingDialog("Signing you in...");
