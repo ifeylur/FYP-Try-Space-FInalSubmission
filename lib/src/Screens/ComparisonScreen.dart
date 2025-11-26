@@ -1,7 +1,11 @@
 import 'dart:io';
-
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
+import 'package:try_space/Providers/TryOnResultProvider.dart';
+import 'package:try_space/Models/TryOnResultModel.dart';
+import 'package:path_provider/path_provider.dart';
 
 class ComparisonScreen extends StatefulWidget {
   const ComparisonScreen({super.key});
@@ -14,12 +18,40 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
   File? _firstImage;
   File? _secondImage;
   bool _showResult = false;
-
+  bool _isLoading = true;
 
   final List<Color> gradientColors = const [
     Color(0xFFFF5F6D),
     Color(0xFFFFC371),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserResults();
+  }
+
+  Future<void> _loadUserResults() async {
+    setState(() {
+      _isLoading = true;
+    });
+    
+    try {
+      await Provider.of<TryOnResultProvider>(context, listen: false).fetchUserResults();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to load results: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   Future<void> _pickImage(bool isFirst) async {
     final pickedFile =
@@ -189,6 +221,46 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
                             ),
                           ],
                         ),
+                      
+                      // Recent Results Section (similar to HomePage)
+                      const SizedBox(height: 30),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 0),
+                        child: Text(
+                          'Recents',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 15),
+                      SizedBox(
+                        height: 120,
+                        child: _isLoading 
+                          ? const Center(child: CircularProgressIndicator(color: Colors.white))
+                          : Consumer<TryOnResultProvider>(
+                              builder: (context, provider, _) {
+                                final userResults = provider.userResults;
+                                return userResults.isEmpty
+                                  ? Center(
+                                      child: Text(
+                                        'No try-on results yet',
+                                        style: TextStyle(color: Colors.white70),
+                                      ),
+                                    )
+                                  : ListView.builder(
+                                      padding: const EdgeInsets.symmetric(horizontal: 0),
+                                      scrollDirection: Axis.horizontal,
+                                      itemCount: userResults.length,
+                                      itemBuilder: (context, index) {
+                                        return _buildResultCard(userResults[index]);
+                                      },
+                                    );
+                              },
+                            ),
+                      ),
                     ],
                   ),
                 ),
@@ -231,4 +303,185 @@ class _ComparisonScreenState extends State<ComparisonScreen> {
       ),
     );
   }
+
+  Widget _buildResultCard(TryOnResultModel result) {
+    try {
+      // Decode base64 image
+      final String completeBase64 = result.isChunked 
+        ? result.getCompleteImage() 
+        : result.resultImage;
+    
+      // Decode base64 image
+      final imageBytes = base64Decode(completeBase64);
+      
+      return GestureDetector(
+        onTap: () => _selectImageForComparison(result), // Only select for comparison, no navigation
+        child: Container(
+          width: 100,
+          margin: const EdgeInsets.symmetric(horizontal: 5),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(10),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.2),
+                spreadRadius: 1,
+                blurRadius: 5,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              Expanded(
+                child: Hero(
+                  tag: 'tryonresult_${result.id}',
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+                    child: Image.memory(
+                      imageBytes,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      gaplessPlayback: true,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: Colors.grey[200],
+                          child: Icon(Icons.broken_image, color: Colors.grey[400]),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Text(
+                  result.title,
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    } catch (e) {
+      print("Error displaying result card: $e");
+      return Container(
+        width: 100,
+        margin: const EdgeInsets.symmetric(horizontal: 5),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Center(
+          child: Icon(Icons.image, color: Colors.grey[400]),
+        ),
+      );
+    }
+  }
+
+  /// Select an image from recents for comparison
+  /// First click selects first image, second click selects second image
+  Future<void> _selectImageForComparison(TryOnResultModel result) async {
+    try {
+      // Get complete base64 image
+      final String completeBase64 = result.isChunked 
+        ? result.getCompleteImage() 
+        : result.resultImage;
+      
+      // Decode base64 to bytes
+      final imageBytes = base64Decode(completeBase64);
+      
+      // Create temporary file from bytes
+      final tempDir = await getTemporaryDirectory();
+      final tempFile = File('${tempDir.path}/comparison_${result.id}_${DateTime.now().millisecondsSinceEpoch}.jpg');
+      await tempFile.writeAsBytes(imageBytes);
+      
+      // Determine which image slot to fill
+      if (_firstImage == null) {
+        // First image is empty, select for first slot
+        setState(() {
+          _firstImage = tempFile;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ First image selected'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 1),
+          ),
+        );
+      } else if (_secondImage == null) {
+        // Second image is empty, select for second slot
+        setState(() {
+          _secondImage = tempFile;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Second image selected'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 1),
+          ),
+        );
+      } else {
+        // Both images are already selected, ask user which to replace
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Replace Image'),
+            content: const Text('Both images are already selected. Which one would you like to replace?'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  setState(() {
+                    _firstImage = tempFile;
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('✅ First image replaced'),
+                      backgroundColor: Colors.green,
+                      duration: Duration(seconds: 1),
+                    ),
+                  );
+                },
+                child: const Text('Replace First'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  setState(() {
+                    _secondImage = tempFile;
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('✅ Second image replaced'),
+                      backgroundColor: Colors.green,
+                      duration: Duration(seconds: 1),
+                    ),
+                  );
+                },
+                child: const Text('Replace Second'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Cancel'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      print("Error selecting image for comparison: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error selecting image: $e'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
 }

@@ -13,15 +13,17 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:saver_gallery/saver_gallery.dart';
 
 class ResultScreen extends StatefulWidget {
-  final File userImage;
-  final File garmentImage;
+  final File? userImage;
+  final File? garmentImage;
   final String? resultImageBase64;
+  final String? resultId; // ID of the saved result (if available)
 
   const ResultScreen({
     Key? key,
-    required this.userImage,
-    required this.garmentImage,
+    this.userImage,
+    this.garmentImage,
     this.resultImageBase64,
+    this.resultId,
   }) : super(key: key);
 
   @override
@@ -38,6 +40,7 @@ class _ResultScreenState extends State<ResultScreen> {
     Color(0xFFFF5F6D),
     Color(0xFFFFC371),
   ];
+
 
   @override
   Widget build(BuildContext context) {
@@ -62,151 +65,184 @@ class _ResultScreenState extends State<ResultScreen> {
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
+        actions: [
+          // Show delete button only if this is a saved result (has resultId)
+          if (widget.resultId != null && widget.resultId!.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.delete_outline, color: Colors.white),
+              onPressed: _confirmDelete,
+              tooltip: 'Delete Result',
+            ),
+        ],
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: Center(
-              child: RepaintBoundary(
-                key: _resultKey,
-                child: Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(15),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.grey.withOpacity(0.3),
-                        spreadRadius: 2,
-                        blurRadius: 10,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(15),
-                    // Display the result from API if available, otherwise show overlay
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: gradientColors,
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ),
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              // Image Display Section
+              Container(
+                height: MediaQuery.of(context).size.height * 0.45, // 45% of screen height instead of fixed 400
+                margin: const EdgeInsets.all(16), // Reduced from 20
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(15),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.3),
+                      spreadRadius: 2,
+                      blurRadius: 10,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(15),
+                  child: RepaintBoundary(
+                    key: _resultKey,
                     child: widget.resultImageBase64 != null
-                        ? Image.memory(
-                            base64Decode(widget.resultImageBase64!),
-                            fit: BoxFit.cover,
-                            height: double.infinity,
-                            width: double.infinity,
-                            errorBuilder: (context, error, stackTrace) {
-                              // Fallback to overlay if base64 decode fails
-                              return Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  Image.file(
-                                    widget.userImage,
-                                    fit: BoxFit.cover,
-                                    height: double.infinity,
-                                    width: double.infinity,
-                                  ),
-                                  Opacity(
-                                    opacity: 0.7,
-                                    child: Image.file(
-                                      widget.garmentImage,
-                                      fit: BoxFit.cover,
-                                      height: double.infinity,
-                                      width: double.infinity,
+                            ? Image.memory(
+                                base64Decode(widget.resultImageBase64!),
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                                height: double.infinity,
+                                errorBuilder: (context, error, stackTrace) {
+                                  // Fallback to overlay if base64 decode fails
+                                  if (widget.userImage != null && widget.garmentImage != null) {
+                                    return Stack(
+                                      alignment: Alignment.center,
+                                      children: [
+                                        Image.file(
+                                          widget.userImage!,
+                                          fit: BoxFit.cover,
+                                          width: double.infinity,
+                                          height: double.infinity,
+                                        ),
+                                        Opacity(
+                                          opacity: 0.7,
+                                          child: Image.file(
+                                            widget.garmentImage!,
+                                            fit: BoxFit.cover,
+                                            width: double.infinity,
+                                            height: double.infinity,
+                                          ),
+                                        ),
+                                      ],
+                                    );
+                                  } else {
+                                    return Container(
+                                      color: Colors.grey[200],
+                                      child: const Center(
+                                        child: Icon(Icons.broken_image, size: 50, color: Colors.grey),
+                                      ),
+                                    );
+                                  }
+                                },
+                              )
+                            : widget.userImage != null && widget.garmentImage != null
+                                ? Stack(
+                                    alignment: Alignment.center,
+                                    children: [
+                                      Image.file(
+                                        widget.userImage!,
+                                        fit: BoxFit.cover,
+                                        width: double.infinity,
+                                        height: double.infinity,
+                                      ),
+                                      Opacity(
+                                        opacity: 0.7,
+                                        child: Image.file(
+                                          widget.garmentImage!,
+                                          fit: BoxFit.cover,
+                                          width: double.infinity,
+                                          height: double.infinity,
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                : Container(
+                                    color: Colors.grey[200],
+                                    child: const Center(
+                                      child: Icon(Icons.image, size: 50, color: Colors.grey),
                                     ),
                                   ),
-                                ],
-                              );
-                            },
-                          )
-                        : Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              Image.file(
-                                widget.userImage,
-                                fit: BoxFit.cover,
-                                height: double.infinity,
-                                width: double.infinity,
-                              ),
-                              Opacity(
-                                opacity: 0.7,
-                                child: Image.file(
-                                  widget.garmentImage,
-                                  fit: BoxFit.cover,
-                                  height: double.infinity,
-                                  width: double.infinity,
-                                ),
-                              ),
-                            ],
+                  ),
+                ),
+              ),
+              if (_errorMessage.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Text(
+                    _errorMessage,
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                ),
+              
+              Padding(
+                padding: const EdgeInsets.all(16), // Reduced from 20
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: _isSaving ? null : _saveToGallery,
+                        icon: const Icon(Icons.save_alt, color: Colors.white),
+                        label: const Text(
+                          'Save to Gallery',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
                           ),
-                  ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 15,
+                            horizontal: 20,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          backgroundColor: gradientColors[0],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: _isSaving ? null : _saveResultToFirestore,
+                        icon: const Icon(Icons.cloud_upload, color: Colors.white),
+                        label: const Text(
+                          'Save to Cloud',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 15,
+                            horizontal: 20,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          backgroundColor: gradientColors[1],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
+            ],
           ),
-          if (_errorMessage.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Text(
-                _errorMessage,
-                style: const TextStyle(color: Colors.red),
-              ),
-            ),
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: _isSaving ? null : _saveToGallery,
-                    icon: const Icon(Icons.save_alt, color: Colors.white),
-                    label: const Text(
-                      'Save to Gallery',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 15,
-                        horizontal: 20,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      backgroundColor: gradientColors[0],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: _isSaving ? null : _saveResultToFirestore,
-                    icon: const Icon(Icons.cloud_upload, color: Colors.white),
-                    label: const Text(
-                      'Save to Cloud',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 15,
-                        horizontal: 20,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      backgroundColor: gradientColors[1],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -438,7 +474,7 @@ class _ResultScreenState extends State<ResultScreen> {
       }
 
       // Capture the result image as Base64
-      final base64Image = await _captureResultAsBase64();
+      String? base64Image = await _captureResultAsBase64();
 
       if (base64Image != null) {
         // Generate a unique ID
@@ -546,6 +582,84 @@ class _ResultScreenState extends State<ResultScreen> {
     } catch (e) {
       print('Error compressing image: $e');
       return bytes; // Return original if compression fails
+    }
+  }
+
+
+  /// Confirm and delete the result from Firestore and recents
+  Future<void> _confirmDelete() async {
+    if (widget.resultId == null || widget.resultId!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cannot delete: Result ID not available'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Try-On Result'),
+        content: const Text(
+          'Are you sure you want to delete this try-on result? This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        setState(() {
+          _isSaving = true;
+        });
+
+        // Delete from Firestore using provider
+        await Provider.of<TryOnResultProvider>(
+          context,
+          listen: false,
+        ).deleteTryOnResult(widget.resultId!);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Result deleted successfully'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+
+          // Navigate back to previous screen
+          Navigator.of(context).pop(true); // Return true to indicate deletion
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() {
+            _isSaving = false;
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to delete result: $e'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      }
     }
   }
 }

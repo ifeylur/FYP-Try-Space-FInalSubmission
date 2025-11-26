@@ -311,164 +311,37 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  // Function to show image preview with options
+  // Function to show image preview - navigates to ResultScreen
   void _showImagePreview(TryOnResultModel result) {
     try {
-      // Decode base64 image
+      // Get complete base64 image
       final String completeBase64 = result.isChunked 
         ? result.getCompleteImage() 
         : result.resultImage;
       
-      final imageBytes = base64Decode(completeBase64);
-      
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return Dialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            elevation: 0,
-            backgroundColor: Colors.transparent,
-            child: Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ClipRRect(
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(20),
-                    ),
-                    child: Image.memory(
-                      imageBytes,
-                      fit: BoxFit.contain,
-                      gaplessPlayback: true,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          height: 200,
-                          color: Colors.grey[200],
-                          child: Icon(Icons.broken_image, color: Colors.grey[400], size: 50),
-                        );
-                      },
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Text(
-                      result.title,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 16.0, left: 16.0, right: 16.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            icon: const Icon(Icons.delete, color: Colors.white),
-                            label: const Text('Delete', style: TextStyle(color: Colors.white)),
-                            onPressed: () async {
-                              Navigator.of(context).pop();
-                              
-                              // Show confirmation dialog
-                              showDialog(
-                                context: context,
-                                builder: (context) => AlertDialog(
-                                  title: const Text('Delete Result'),
-                                  content: const Text('Are you sure you want to delete this try-on result?'),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () => Navigator.of(context).pop(),
-                                      child: const Text('Cancel'),
-                                    ),
-                                    TextButton(
-                                      onPressed: () async {
-                                        Navigator.of(context).pop();
-                                        
-                                        // Show loading indicator
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(
-                                            content: Text('Deleting...'),
-                                            duration: Duration(seconds: 1),
-                                          ),
-                                        );
-                                        
-                                        try {
-                                          await Provider.of<TryOnResultProvider>(context, listen: false)
-                                            .deleteTryOnResult(result.id);
-                                            
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(content: Text('Result deleted successfully')),
-                                          );
-                                        } catch (e) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            SnackBar(content: Text('Failed to delete: $e')),
-                                          );
-                                        }
-                                      },
-                                      child: const Text('Delete', style: TextStyle(color: Colors.red)),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.red,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            icon: const Icon(Icons.save_alt, color: Colors.white),
-                            label: const Text('Save', style: TextStyle(color: Colors.white)),
-                            onPressed: () async {
-                              Navigator.of(context).pop();
-                              
-                              // Show loading indicator
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Saving to gallery...'),
-                                  duration: Duration(seconds: 1),
-                                ),
-                              );
-                              
-                              await _saveToGallery(completeBase64, result.title);
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: gradientColors[0],
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      );
+      // Navigate to ResultScreen with the result image and ID
+      // This allows users to view and delete saved results
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => ResultScreen(
+            userImage: null, // Not available for saved results
+            garmentImage: null, // Not available for saved results
+            resultImageBase64: completeBase64,
+            resultId: result.id, // Pass result ID for delete functionality
+          ),
+        ),
+      ).then((deleted) {
+        // Refresh results when returning from the ResultScreen
+        // If deleted is true, the result was deleted
+        _loadUserResults();
+      });
     } catch (e) {
-      print("Error displaying image preview: $e");
+      print("Error opening result: $e");
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error displaying image: $e')),
+        SnackBar(
+          content: Text('Error opening result: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
