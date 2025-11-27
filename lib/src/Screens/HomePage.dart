@@ -8,7 +8,6 @@ import 'package:provider/provider.dart';
 import 'package:try_space/Providers/TryOnResultProvider.dart';
 import 'package:try_space/Providers/VirtualTryOnProvider.dart';
 import 'package:try_space/Models/TryOnResultModel.dart';
-// import 'package:image_gallery_saver/image_gallery_saver.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class HomePage extends StatefulWidget {
@@ -24,8 +23,10 @@ class _HomePageState extends State<HomePage> {
   File? _garmentImage;
   bool _isLoading = true;
   int _currentIndex = 0;
-
-  // Define the gradient colors
+  
+  // NEW: Garment category selection
+  String _selectedCategory = 'upper';
+  
   final List<Color> gradientColors = const [
     Color(0xFFFF5F6D),
     Color(0xFFFFC371),
@@ -154,16 +155,13 @@ class _HomePageState extends State<HomePage> {
       return;
     }
 
-    // Get the VirtualTryOnProvider
     final virtualTryOnProvider = Provider.of<VirtualTryOnProvider>(context, listen: false);
     
-    // Clear any previous errors
     virtualTryOnProvider.clearResult();
 
-    // Show loading dialog
     showDialog(
       context: context,
-      barrierDismissible: false, // Prevent dismissing during processing
+      barrierDismissible: false,
       builder: (BuildContext context) {
         return Dialog(
           shape: RoundedRectangleBorder(
@@ -193,7 +191,7 @@ class _HomePageState extends State<HomePage> {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'Please wait...',
+                  'Category: $_selectedCategory',
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.grey[500],
@@ -207,17 +205,18 @@ class _HomePageState extends State<HomePage> {
     );
 
     try {
-      // Call the provider to generate try-on
-      await virtualTryOnProvider.generateTryOn(_userImage!, _garmentImage!);
+      // UPDATED: Pass garment category to provider
+      await virtualTryOnProvider.generateTryOn(
+        _userImage!, 
+        _garmentImage!,
+        garmentCategory: _selectedCategory, // NEW
+      );
 
-      // Dismiss loading dialog
       if (mounted) {
         Navigator.of(context).pop();
       }
 
-      // Check for errors
       if (virtualTryOnProvider.errorMessage != null) {
-        // Show error message
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -230,12 +229,9 @@ class _HomePageState extends State<HomePage> {
         return;
       }
 
-      // Check if result is available
       if (virtualTryOnProvider.resultImage != null && mounted) {
-        // Convert base64 to Uint8List for display
         final imageBytes = base64Decode(virtualTryOnProvider.resultImage!);
         
-        // Navigate to result screen with the result image
         Navigator.of(context).push(
           MaterialPageRoute(
             builder: (context) => ResultScreen(
@@ -245,9 +241,7 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
         ).then((_) {
-          // Refresh results when returning from the ResultScreen
           _loadUserResults();
-          // Clear the result from provider
           virtualTryOnProvider.clearResult();
         });
       } else {
@@ -261,12 +255,10 @@ class _HomePageState extends State<HomePage> {
         }
       }
     } catch (e) {
-      // Dismiss loading dialog if still showing
       if (mounted) {
         Navigator.of(context).pop();
       }
       
-      // Show error
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -279,60 +271,22 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  // Function to save image to gallery
-  Future<void> _saveToGallery(String base64Image, String title) async {
-    try {
-      // Check if permission is granted
-      final status = await Permission.storage.request();
-      
-      if (status.isGranted) {
-        // Convert base64 to bytes
-        // final Uint8List bytes = base64Decode(base64Image);
-        
-        // Save to gallery
-        // final result = await ImageGallerySaver.saveImage(
-        //   bytes,
-        //   quality: 100,
-        //   name: '${title}_${DateTime.now().millisecondsSinceEpoch}',
-        // );
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Image saved to gallery')),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Permission denied to save image')),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to save image: $e')),
-      );
-    }
-  }
-
-  // Function to show image preview - navigates to ResultScreen
   void _showImagePreview(TryOnResultModel result) {
     try {
-      // Get complete base64 image
       final String completeBase64 = result.isChunked 
         ? result.getCompleteImage() 
         : result.resultImage;
       
-      // Navigate to ResultScreen with the result image and ID
-      // This allows users to view and delete saved results
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (context) => ResultScreen(
-            userImage: null, // Not available for saved results
-            garmentImage: null, // Not available for saved results
+            userImage: null,
+            garmentImage: null,
             resultImageBase64: completeBase64,
-            resultId: result.id, // Pass result ID for delete functionality
+            resultId: result.id,
           ),
         ),
       ).then((deleted) {
-        // Refresh results when returning from the ResultScreen
-        // If deleted is true, the result was deleted
         _loadUserResults();
       });
     } catch (e) {
@@ -351,7 +305,8 @@ class _HomePageState extends State<HomePage> {
     final userResults = Provider.of<TryOnResultProvider>(context).userResults;
     
     return Scaffold(
-      appBar: AppBar(automaticallyImplyLeading: false,
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: const Text('Dashboard', style: TextStyle(color: Colors.white)),
         centerTitle: true,
         flexibleSpace: Container(
@@ -367,16 +322,13 @@ class _HomePageState extends State<HomePage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.history, color: Colors.white),
-            onPressed: () {
-              // Navigate to history screen
-            },
+            onPressed: () {},
           ),
         ],
       ),
       body: IndexedStack(
         index: _currentIndex,
         children: [
-          // Home tab
           SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -446,6 +398,96 @@ class _HomePageState extends State<HomePage> {
                     ],
                   ),
                 ),
+                
+                // NEW: Garment Category Selector
+                const SizedBox(height: 20),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Garment Category',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey[800],
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.grey[300]!),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.withOpacity(0.1),
+                              spreadRadius: 1,
+                              blurRadius: 3,
+                              offset: const Offset(0, 1),
+                            ),
+                          ],
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: _selectedCategory,
+                            isExpanded: true,
+                            padding: const EdgeInsets.symmetric(horizontal: 15),
+                            items: const [
+                              DropdownMenuItem(
+                                value: 'upper',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.checkroom, size: 20),
+                                    SizedBox(width: 10),
+                                    Text('Upper (Tops, Shirts, Jackets)'),
+                                  ],
+                                ),
+                              ),
+                              DropdownMenuItem(
+                                value: 'lower',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.roller_skating, size: 20),
+                                    SizedBox(width: 10),
+                                    Text('Lower (Pants, Skirts)'),
+                                  ],
+                                ),
+                              ),
+                              DropdownMenuItem(
+                                value: 'overall',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.accessibility_new, size: 20),
+                                    SizedBox(width: 10),
+                                    Text('Overall (Dresses, Full Outfits)'),
+                                  ],
+                                ),
+                              ),
+                            ],
+                            onChanged: (String? value) {
+                              if (value != null) {
+                                setState(() {
+                                  _selectedCategory = value;
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        'Select the type of garment you want to try on',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
                 const SizedBox(height: 30),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -459,14 +501,14 @@ class _HomePageState extends State<HomePage> {
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ).copyWith(
-                      backgroundColor: MaterialStateProperty.resolveWith<
-                        Color
-                      >((Set<MaterialState> states) {
-                        if (states.contains(MaterialState.disabled)) {
-                          return Colors.grey;
-                        }
-                        return gradientColors[0]; // Using the first color from gradient
-                      }),
+                      backgroundColor: MaterialStateProperty.resolveWith<Color>(
+                        (Set<MaterialState> states) {
+                          if (states.contains(MaterialState.disabled)) {
+                            return Colors.grey;
+                          }
+                          return gradientColors[0];
+                        },
+                      ),
                     ),
                     child: const Text(
                       'Try It On',
@@ -522,12 +564,10 @@ class _HomePageState extends State<HomePage> {
   
   Widget _buildResultCard(TryOnResultModel result) {
     try {
-      // Decode base64 image
       final String completeBase64 = result.isChunked 
         ? result.getCompleteImage() 
         : result.resultImage;
     
-      // Decode base64 image
       final imageBytes = base64Decode(completeBase64);
       
       return GestureDetector(
@@ -558,9 +598,8 @@ class _HomePageState extends State<HomePage> {
                       imageBytes,
                       fit: BoxFit.cover,
                       width: double.infinity,
-                      gaplessPlayback: true, // Prevents flickering during loading
+                      gaplessPlayback: true,
                       errorBuilder: (context, error, stackTrace) {
-                        // Fallback if image can't be displayed
                         return Container(
                           color: Colors.grey[200],
                           child: Icon(Icons.broken_image, color: Colors.grey[400]),
@@ -585,7 +624,6 @@ class _HomePageState extends State<HomePage> {
       );
     } catch (e) {
       print("Error displaying result card: $e");
-      // Fallback if image loading fails
       return _buildCategoryCard(result.title, Icons.checkroom);
     }
   }
@@ -608,28 +646,27 @@ class _HomePageState extends State<HomePage> {
             width: image != null ? 2 : 1,
           ),
         ),
-        child:
-            image != null
-                ? ClipRRect(
-                  borderRadius: BorderRadius.circular(14),
-                  child: Image.file(image, fit: BoxFit.cover),
-                )
-                : Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(icon, size: 40, color: Colors.grey[500]),
-                    const SizedBox(height: 10),
-                    Text(
-                      title,
-                      style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      'Tap to select',
-                      style: TextStyle(fontSize: 12, color: Colors.grey[500]),
-                    ),
-                  ],
-                ),
+        child: image != null
+            ? ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: Image.file(image, fit: BoxFit.cover),
+              )
+            : Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(icon, size: 40, color: Colors.grey[500]),
+                  const SizedBox(height: 10),
+                  Text(
+                    title,
+                    style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    'Tap to select',
+                    style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                  ),
+                ],
+              ),
       ),
     );
   }
