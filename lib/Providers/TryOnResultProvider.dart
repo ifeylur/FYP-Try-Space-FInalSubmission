@@ -25,7 +25,7 @@ class TryOnResultProvider with ChangeNotifier {
     return chunks;
   }
 
-  /// Fetch all try-on results (for admin or public view)
+  /// Fetch all try-on results
   Future<void> fetchAllResults() async {
     try {
       // Create a composite index in Firebase console for this query
