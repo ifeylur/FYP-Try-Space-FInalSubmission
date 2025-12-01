@@ -11,8 +11,8 @@ class VirtualTryOnService {
   static const String _baseUrl = 'https://feylur-try-space-project.hf.space';
   static const Duration _timeout = Duration(seconds: 240);
   static const int _maxRetries = 3;
-  static const int _maxImageSize = 512;
-  static const int _jpegQuality = 70;
+  static const int _maxImageSize = 768;
+  static const int _jpegQuality = 95;
   
   Future<Map<String, dynamic>?> _getApiInfo() async {
     try {

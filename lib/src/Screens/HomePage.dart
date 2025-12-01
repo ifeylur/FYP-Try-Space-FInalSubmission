@@ -451,7 +451,7 @@ class _HomePageState extends State<HomePage> {
                                   children: [
                                     Icon(Icons.roller_skating, size: 20),
                                     SizedBox(width: 10),
-                                    Text('Lower (Pants, Skirts)'),
+                                    Text('Lower (Pants, Jeans)'),
                                   ],
                                 ),
                               ),
