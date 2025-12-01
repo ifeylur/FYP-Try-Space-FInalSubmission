@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:try_space/Models/UserModel.dart';
 import 'package:try_space/Providers/UserProvider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:try_space/Services/FeedbackService.dart';
 
 class Profile extends StatefulWidget {
   const Profile({super.key});
@@ -16,6 +17,7 @@ class Profile extends StatefulWidget {
 
 class _ProfileState extends State<Profile> {
   final Auth _auth = Auth();
+  final FeedbackService _feedbackService = FeedbackService();
   bool _isLoading = true;
 
   final List<Color> gradientColors = const [
@@ -101,6 +103,11 @@ class _ProfileState extends State<Profile> {
                       icon: Icons.info_outline,
                       label: 'About Us',
                       onTap: () => Navigator.pushNamed(context, '/about'),
+                    ),
+                    _buildButton(
+                      icon: Icons.feedback,
+                      label: 'Send Feedback',
+                      onTap: () => _showFeedbackDialog(),
                     ),
                     const Spacer(),
                     _buildButton(
@@ -294,6 +301,141 @@ class _ProfileState extends State<Profile> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _showFeedbackDialog() {
+    final TextEditingController messageController = TextEditingController();
+    int? selectedRating;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            title: const Text('Send Feedback'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'We\'d love to hear your thoughts!',
+                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Rating (Optional)',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(5, (index) {
+                      return IconButton(
+                        icon: Icon(
+                          selectedRating != null && index < selectedRating!
+                              ? Icons.star
+                              : Icons.star_border,
+                          color: Colors.amber,
+                          size: 32,
+                        ),
+                        onPressed: () {
+                          setDialogState(() {
+                            selectedRating = index + 1;
+                          });
+                        },
+                      );
+                    }),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Message',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: messageController,
+                    maxLines: 5,
+                    decoration: InputDecoration(
+                      hintText: 'Tell us what you think...',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  if (messageController.text.trim().isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Please enter your feedback message'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                    return;
+                  }
+
+                  // Show loading
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Row(
+                        children: [
+                          SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          ),
+                          SizedBox(width: 12),
+                          Text('Sending feedback...'),
+                        ],
+                      ),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+
+                  // Submit feedback
+                  final success = await _feedbackService.submitFeedback(
+                    message: messageController.text.trim(),
+                    rating: selectedRating,
+                  );
+
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          success
+                              ? 'Thank you for your feedback!'
+                              : 'Failed to send feedback. Please try again.',
+                        ),
+                        backgroundColor: success ? Colors.green : Colors.red,
+                      ),
+                    );
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFF5F6D),
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Send'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

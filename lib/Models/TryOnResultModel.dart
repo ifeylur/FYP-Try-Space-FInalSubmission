@@ -8,6 +8,9 @@ class TryOnResultModel {
   final String title;
   final bool isChunked; // Indicates if the image is split into chunks
   final DateTime? createdAt;
+  final String? category; // upper, lower, overall
+  final bool flagged; // For moderation
+  final bool deleted; // Soft delete flag
 
   TryOnResultModel({
     required this.id,
@@ -17,6 +20,9 @@ class TryOnResultModel {
     this.title = 'Try-On Result',
     this.isChunked = false,
     this.createdAt,
+    this.category,
+    this.flagged = false,
+    this.deleted = false,
   });
 
   Map<String, dynamic> toMap() {
@@ -26,6 +32,9 @@ class TryOnResultModel {
       'userId': userId,
       'title': title,
       'isChunked': isChunked,
+      'category': category,
+      'flagged': flagged,
+      'deleted': deleted,
       // Don't include id in the map as it will be the document ID
       // Don't include createdAt as it will be set by the server
     };
@@ -50,6 +59,9 @@ class TryOnResultModel {
       title: map['title'] ?? 'Try-On Result',
       isChunked: map['isChunked'] ?? false,
       createdAt: createdAtDate,
+      category: map['category'],
+      flagged: map['flagged'] ?? false,
+      deleted: map['deleted'] ?? false,
     );
   }
   

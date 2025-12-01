@@ -31,7 +31,6 @@ class AppRoutes {
   static const String forgotpassword = '/forgotpassword';
   static const String changepassword = '/changepassword';
 
-
   static Map<String, WidgetBuilder> routes = {
     login: (context) => LoginPage(),
     register: (context) => RegisterPage(),
