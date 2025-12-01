@@ -1,0 +1,80 @@
+{
+  "categories": [
+    {
+      "id": "upper",
+      "name": "Upper Body",
+      "icon": "👕",
+      "items": [
+        {
+          "id": "shirt_001",
+          "name": "White Blazer",
+          "image": "assets/catalog/upper/blazer1.webp",
+          "type": "upper"
+        },
+        {
+          "id": "jacket_001",
+          "name": "Black Tee",
+          "image": "assets/catalog/upper/blacktee.jpg",
+          "type": "upper"
+        },
+        {
+          "id": "top_001",
+          "name": "Green Shirt",
+          "image": "assets/catalog/upper/shirt.jpeg",
+          "type": "upper"
+        }
+      ]
+    },
+    {
+      "id": "lower",
+      "name": "Lower Body",
+      "icon": "👖",
+      "items": [
+        {
+          "id": "jeans_001",
+          "name": "Blue Jeans",
+          "image": "assets/catalog/lower/Jeans.jpg",
+          "type": "lower"
+        },
+        {
+          "id": "shorts_001",
+          "name": "Black Jeans",
+          "image": "assets/catalog/lower/blackjeans.webp",
+          "type": "lower"
+        },
+        {
+          "id": "pants_001",
+          "name": "Green Jeans",
+          "image": "assets/catalog/lower/green.jpg",
+          "type": "lower"
+        }
+      ]
+    },
+    {
+      "id": "overall",
+      "name": "Overall Outfits",
+      "icon": "🦸",
+      "items": [
+        {
+          "id": "ironman_001",
+          "name": "Thor Suit",
+          "image": "assets/catalog/overall/Thor.jpg",
+          "type": "overall"
+        },
+        {
+          "id": "deadpool_001",
+          "name": "Deadpool Suit",
+          "image": "assets/catalog/overall/Deadpool.webp",
+          "type": "overall"
+        },
+        {
+          "id": "captain_001",
+          "name": "Iron Man Suit",
+          "image": "assets/catalog/overall/Iron_Man.webp",
+          "type": "overall"
+        }
+      ]
+    }
+  ]
+}
+

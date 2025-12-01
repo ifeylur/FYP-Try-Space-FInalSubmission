@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'dart:typed_data';
 // Import your page screens
 import 'package:try_space/src/Screens/HomePage.dart';
+import 'package:try_space/src/Screens/CatalogScreen.dart';
 import 'package:try_space/src/Screens/ComparisonScreen.dart';
 import 'package:try_space/src/Screens/Profile.dart';
 
@@ -15,6 +17,7 @@ class NavBar extends StatefulWidget {
 
 class _NavBarState extends State<NavBar> {
   late int _selectedIndex;
+  final GlobalKey _homePageKey = GlobalKey();
 
   @override
   void initState() {
@@ -22,17 +25,38 @@ class _NavBarState extends State<NavBar> {
     _selectedIndex = widget.initialIndex;
   }
 
-  static final List<Widget> _pages = <Widget>[
-    HomePage(),
-    ComparisonScreen(),
-    Profile(),
-  ];
-
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
   }
+
+  void _onGarmentSelected(Uint8List bytes, String type, String name) {
+    // Switch to Home tab (index 0)
+    setState(() {
+      _selectedIndex = 0;
+    });
+    
+    // Wait for the next frame to ensure HomePage is built, then call setCatalogGarment
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final state = _homePageKey.currentState;
+      if (state != null) {
+        // Use dynamic to call the method since _HomePageState is private
+        try {
+          (state as dynamic).setCatalogGarment(bytes, type);
+        } catch (e) {
+          print('Error setting catalog garment: $e');
+        }
+      }
+    });
+  }
+
+  List<Widget> get _pages => <Widget>[
+    HomePage(key: _homePageKey),
+    CatalogScreen(onGarmentSelected: _onGarmentSelected),
+    ComparisonScreen(),
+    Profile(),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -56,6 +80,10 @@ class _NavBarState extends State<NavBar> {
               BottomNavigationBarItem(
                 icon: Icon(Icons.home),
                 label: 'Home',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.checkroom),
+                label: 'Catalog',
               ),
               BottomNavigationBarItem(
                 icon: Icon(Icons.compare_arrows),

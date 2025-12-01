@@ -9,9 +9,12 @@ import 'package:try_space/Providers/TryOnResultProvider.dart';
 import 'package:try_space/Providers/VirtualTryOnProvider.dart';
 import 'package:try_space/Models/TryOnResultModel.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:path_provider/path_provider.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  final GlobalKey? key;
+
+  const HomePage({this.key}) : super(key: key);
 
   @override
   _HomePageState createState() => _HomePageState();
@@ -142,6 +145,33 @@ class _HomePageState extends State<HomePage> {
         );
       },
     );
+  }
+
+  // Method to receive catalog garment from CatalogScreen
+  Future<void> setCatalogGarment(Uint8List imageBytes, String garmentType) async {
+    try {
+      // Get temporary directory
+      final directory = await getTemporaryDirectory();
+      final file = File('${directory.path}/catalog_garment_${DateTime.now().millisecondsSinceEpoch}.png');
+      
+      // Write bytes to file
+      await file.writeAsBytes(imageBytes);
+      
+      // Update state
+      setState(() {
+        _garmentImage = file;
+        _selectedCategory = garmentType; // Set the category based on garment type
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading catalog garment: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _processImages() async {
