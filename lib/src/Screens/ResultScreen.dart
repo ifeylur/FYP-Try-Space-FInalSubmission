@@ -10,6 +10,7 @@ import 'package:try_space/Models/TryOnResultModel.dart';
 import 'package:try_space/Providers/TryOnResultProvider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:saver_gallery/saver_gallery.dart';
 
 class ResultScreen extends StatefulWidget {
@@ -269,6 +270,16 @@ class _ResultScreenState extends State<ResultScreen> {
       }
       
       if (Platform.isAndroid) {
+        final androidInfo = await DeviceInfoPlugin().androidInfo;
+        final sdkInt = androidInfo.version.sdkInt;
+        
+        if (sdkInt >= 33) {
+          // Android 13+ - use photos permission
+          permissionStatus = await Permission.photos.request();
+        } else {
+          // Android 12 and below - use storage permission
+          permissionStatus = await Permission.storage.request();
+        }
         // For Android, try photos permission first (Android 13+), then storage
         permissionStatus = await Permission.photos.request();
         
