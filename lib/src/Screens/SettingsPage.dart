@@ -72,15 +72,12 @@ class _SettingsPageState extends State<SettingsPage> {
               padding: const EdgeInsets.all(16),
               children: [
                 _buildSectionHeader('Appearance Settings'),
-                _buildDarkModeToggle(settingsProvider),
                 _buildLanguageSelector(settingsProvider),
-                _buildThemeColorPicker(settingsProvider),
                 
                 const SizedBox(height: 24),
                 _buildSectionHeader('Image Quality Settings'),
                 _buildImageQualitySlider(settingsProvider),
                 _buildAutoSaveToggle(settingsProvider),
-                _buildUploadSizeLimit(settingsProvider),
                 
                 const SizedBox(height: 24),
                 _buildSectionHeader('Privacy Settings'),
@@ -152,17 +149,6 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _buildDarkModeToggle(SettingsProvider provider) {
-    return _buildSettingTile(
-      title: 'Dark Mode',
-      trailing: Switch(
-        value: provider.darkMode,
-        onChanged: (value) => provider.setDarkMode(value),
-        activeColor: Colors.white,
-      ),
-    );
-  }
-
   Widget _buildLanguageSelector(SettingsProvider provider) {
     return _buildSettingTile(
       title: 'Language',
@@ -173,31 +159,18 @@ class _SettingsPageState extends State<SettingsPage> {
         underline: Container(),
         items: const [
           DropdownMenuItem(value: 'en', child: Text('English')),
+          DropdownMenuItem(value: 'ur', child: Text('Urdu (Coming Soon)')),
         ],
         onChanged: (value) {
-          if (value != null) provider.setLanguage(value);
-        },
-      ),
-    );
-  }
-
-  Widget _buildThemeColorPicker(SettingsProvider provider) {
-    final colors = ['default', 'blue', 'green', 'purple', 'orange'];
-    return _buildSettingTile(
-      title: 'Theme Color',
-      trailing: DropdownButton<String>(
-        value: provider.themeColor,
-        dropdownColor: const Color(0xFFFF5F6D),
-        style: const TextStyle(color: Colors.white),
-        underline: Container(),
-        items: colors.map((color) {
-          return DropdownMenuItem(
-            value: color,
-            child: Text(color[0].toUpperCase() + color.substring(1)),
-          );
-        }).toList(),
-        onChanged: (value) {
-          if (value != null) provider.setThemeColor(value);
+          if (value != null) {
+            if (value == 'ur') {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Urdu language coming in future')),
+              );
+            } else {
+              provider.setLanguage(value);
+            }
+          }
         },
       ),
     );
@@ -232,28 +205,6 @@ class _SettingsPageState extends State<SettingsPage> {
         value: provider.autoSaveResults,
         onChanged: (value) => provider.setAutoSaveResults(value),
         activeColor: Colors.white,
-      ),
-    );
-  }
-
-  Widget _buildUploadSizeLimit(SettingsProvider provider) {
-    final sizeMap = {'512': '512px', '768': '768px', '1024': '1024px'};
-    return _buildSettingTile(
-      title: 'Upload Size Limit: ${sizeMap[provider.uploadSizeLimit] ?? '1024px'}',
-      trailing: DropdownButton<String>(
-        value: provider.uploadSizeLimit,
-        dropdownColor: const Color(0xFFFF5F6D),
-        style: const TextStyle(color: Colors.white),
-        underline: Container(),
-        items: sizeMap.entries.map((entry) {
-          return DropdownMenuItem(
-            value: entry.key,
-            child: Text(entry.value),
-          );
-        }).toList(),
-        onChanged: (value) {
-          if (value != null) provider.setUploadSizeLimit(value);
-        },
       ),
     );
   }
@@ -396,11 +347,7 @@ class _SettingsPageState extends State<SettingsPage> {
     return _buildSettingTile(
       title: 'Privacy Policy',
       trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 16),
-      onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Privacy Policy page coming soon')),
-        );
-      },
+      onTap: () => Navigator.pushNamed(context, '/about'),
     );
   }
 
@@ -408,11 +355,7 @@ class _SettingsPageState extends State<SettingsPage> {
     return _buildSettingTile(
       title: 'Terms of Service',
       trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 16),
-      onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Terms of Service page coming soon')),
-        );
-      },
+      onTap: () => Navigator.pushNamed(context, '/about'),
     );
   }
 
@@ -420,17 +363,7 @@ class _SettingsPageState extends State<SettingsPage> {
     return _buildSettingTile(
       title: 'Contact Support',
       trailing: const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 16),
-      onTap: () async {
-        final email = 'support@tryspace.app';
-        final uri = Uri.parse('mailto:$email');
-        if (await canLaunchUrl(uri)) {
-          await launchUrl(uri);
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Email: $email')),
-          );
-        }
-      },
+      onTap: () => Navigator.pushNamed(context, '/about'),
     );
   }
 
@@ -446,4 +379,3 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 }
-

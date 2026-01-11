@@ -13,6 +13,7 @@ import 'package:try_space/src/Screens/SettingsPage.dart';
 import 'package:try_space/src/Screens/AboutUsPage.dart';
 import 'package:try_space/src/Screens/ForgotPasswordPage.dart';
 import 'package:try_space/src/Screens/ChangePasswordPage.dart';
+import 'package:try_space/src/Screens/CatalogScreen.dart';
 
 
 class AppRoutes {
@@ -30,6 +31,7 @@ class AppRoutes {
   static const String about = '/about';
   static const String forgotpassword = '/forgotpassword';
   static const String changepassword = '/changepassword';
+  static const String catalog = '/catalog';
 
   static Map<String, WidgetBuilder> routes = {
     login: (context) => LoginPage(),
@@ -44,5 +46,6 @@ class AppRoutes {
     about: (context) => AboutUsPage(),
     forgotpassword: (context) => ForgotPasswordPage(),
     changepassword: (context) => ChangePasswordPage(),
+    catalog: (context) => CatalogScreen(),
   };
 }

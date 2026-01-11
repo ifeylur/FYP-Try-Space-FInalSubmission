@@ -9,6 +9,7 @@ import 'package:try_space/Providers/TryOnResultProvider.dart';
 import 'package:try_space/Providers/VirtualTryOnProvider.dart';
 import 'package:try_space/Models/TryOnResultModel.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:try_space/src/Screens/CatalogScreen.dart';
 import 'package:path_provider/path_provider.dart';
 
 class HomePage extends StatefulWidget {
@@ -27,7 +28,6 @@ class _HomePageState extends State<HomePage> {
   bool _isLoading = true;
   int _currentIndex = 0;
   
-  // NEW: Garment category selection
   String _selectedCategory = 'upper';
   
   final List<Color> gradientColors = const [
@@ -140,6 +140,37 @@ class _HomePageState extends State<HomePage> {
                   }
                 },
               ),
+              ListTile(
+  leading: const Icon(Icons.shopping_bag),
+  title: const Text('Choose from catalog'),
+  onTap: () async {
+    Navigator.pop(context); // Close bottom sheet
+    
+    // Navigate to catalog with callback
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CatalogScreen(
+          onGarmentSelected: (imageBytes, garmentType, garmentName) async {
+            // Set the garment for try-on
+            await setCatalogGarment(imageBytes, garmentType);
+            
+            // Go back to home
+            Navigator.of(context).popUntil((route) => route.isFirst);
+            
+            // Show success message
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('$garmentName added for try-on!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  },
+),
             ],
           ),
         );
@@ -213,7 +244,7 @@ class _HomePageState extends State<HomePage> {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'This may take 2-3 minutes',
+                  'This may take 30-40 seconds',
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.grey[600],

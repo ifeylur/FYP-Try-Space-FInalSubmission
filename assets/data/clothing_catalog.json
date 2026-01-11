@@ -72,6 +72,12 @@
           "name": "Iron Man Suit",
           "image": "assets/catalog/overall/Iron_Man.webp",
           "type": "overall"
+        },
+        {
+          "id": "captain_002",
+          "name": "Captain America",
+          "image": "assets/catalog/overall/cap_america.webp",
+          "type": "overall"
         }
       ]
     }
